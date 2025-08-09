@@ -127,3 +127,9 @@ Build a minimal GPT-5-powered assistant app for SMB IT admins that helps generat
 
 - One-shot start (build then serve):
   - `npm run start:prod`
+
+---
+
+## Documentation Rule
+
+- Always update `PSEUDOCODE.md` whenever you change the code. It must reflect the current endpoints, execution flow, scripts, and any notable safety or validation behaviors.
