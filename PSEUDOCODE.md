@@ -29,10 +29,10 @@ Generate endpoint
   - if invalid -> 400
   - If `OPENAI_API_KEY` is missing:
     - Return stub preamble and simple dry-run script (Write-Host/echo)
-  - Else call OpenAI Chat Completions:
-    - system prompt: instructs to output two sections (PREAMBLE, SCRIPT) only
-    - user prompt: includes task, env (m365/gam), OS (windows/unix), and dry-run flag
-    - parse model text:
+  - Else call OpenAI Responses API:
+    - system text: instructs to output two sections (PREAMBLE, SCRIPT) only
+    - user text: includes task, env (m365/gam), OS (windows/unix), and dry-run flag
+    - parse response text:
       - extract PREAMBLE text between `PREAMBLE:` and `SCRIPT:`
       - extract SCRIPT code block (inside triple backticks if present)
     - return { preamble, shell_script }

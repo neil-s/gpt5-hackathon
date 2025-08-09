@@ -77,16 +77,13 @@ app.post("/generate", async (req, res) => {
       `Dry-run: ${dry_run ? "true" : "false"}`,
     ].join("\n");
 
-    const completion = await openai.chat.completions.create({
+    const response = await openai.responses.create({
       model,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
+      input: `SYSTEM\n${system}\n\nUSER\n${user}`,
       temperature: 0.2,
     });
 
-    const text = completion.choices[0]?.message?.content || "";
+    const text = (response as any).output_text ?? "";
     const preambleMatch = text.match(/PREAMBLE:\s*([\s\S]*?)\n\s*SCRIPT:/i);
     const afterScript = text.split(/\n\s*SCRIPT:\s*/i)[1] || "";
     let script = afterScript;

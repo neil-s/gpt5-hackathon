@@ -45,7 +45,7 @@ Build a minimal GPT-5-powered assistant app for SMB IT admins that helps generat
 - Use Node.js with Express or Fastify backend to:
   - Serve React frontend static files.
   - Provide API endpoints `/generate`, `/execute`, `/save`.
-  - Integrate with OpenAI Node SDK.
+  - Integrate with OpenAI Node SDK (Responses API).
   - Enforce CFG grammar and local allowlist validations.
   - Execute shell commands safely via `child_process.spawn`.
 - Use React + Vite frontend to:
