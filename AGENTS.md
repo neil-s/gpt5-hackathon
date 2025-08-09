@@ -85,6 +85,7 @@ Build a minimal GPT-5-powered assistant app for SMB IT admins that helps generat
 ## Deliverables
 
 - CFG grammar files or templates for `m365` and `gam` CLI subsets.
+  - Added at `cfg/gam.gbnf` (safe subset) and `cfg/m365.gbnf` (template to expand).
 - Express or Fastify backend implementing API endpoints with GPT-5 integration.
 - React + Vite frontend UI showing input, preambles, generated shell script, and controls.
 - Command execution engine supporting local OS shells and security checks.
@@ -146,3 +147,11 @@ Tips:
 - Create a `.env` file in the project root for local dev (not committed). Example:
   - `OPENAI_API_KEY=sk-...`
   - `OPENAI_MODEL=gpt-4o-mini`
+
+---
+
+## CFG Usage (Interim)
+
+- Grammar files live in `cfg/`. Current implemented grammar: `cfg/gam.gbnf`.
+- Until direct CFG enforcement is wired to the Responses API, the backend includes the grammar text in the system guidance for `/generate` when `env=gam` to encourage compliant output.
+- Follow-up work: switch to native CFG enforcement in the Responses API and add server-side validation against the allowlist.

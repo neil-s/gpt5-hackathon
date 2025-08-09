@@ -32,6 +32,7 @@ Generate endpoint
   - Else call OpenAI Responses API:
     - system text: instructs to output two sections (PREAMBLE, SCRIPT) only
     - user text: includes task, env (m365/gam), OS (windows/unix), and dry-run flag
+    - if env=gam, load `cfg/gam.gbnf` and append as a hard constraint note in the system guidance (interim until native CFG hook)
     - parse response text:
       - extract PREAMBLE text between `PREAMBLE:` and `SCRIPT:`
       - extract SCRIPT code block (inside triple backticks if present)

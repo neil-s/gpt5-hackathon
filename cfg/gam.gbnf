@@ -1,0 +1,73 @@
+// Grammar: GAM CLI (subset) — safe admin actions only
+// This grammar limits generated commands to a safe subset of GAM operations.
+// Lines are standalone commands; multiple commands separated by newlines.
+
+root ::= script
+
+script ::= command (NL command)* NL?
+
+command ::= gam_command
+
+gam_command ::= create_user
+             | delete_user
+             | suspend_user
+             | unsuspend_user
+             | add_group_member
+             | remove_group_member
+             | create_group
+             | delete_group
+             | print_users
+             | print_groups
+             | print_group_members
+
+// Commands
+create_user ::= "gam create user " EMAIL (
+                  " firstname " QSTR
+                  " lastname " QSTR
+                  " password " QSTR
+                ) (" org " ORGPATH)? (" changepassword " ONOFF)?
+
+delete_user ::= "gam delete user " EMAIL
+
+suspend_user ::= "gam update user " EMAIL " suspended on"
+
+unsuspend_user ::= "gam update user " EMAIL " suspended off"
+
+add_group_member ::= "gam update group " EMAIL " add member " EMAIL
+
+remove_group_member ::= "gam update group " EMAIL " remove member " EMAIL
+
+create_group ::= "gam create group " EMAIL " name " QSTR (" description " QSTR)?
+
+delete_group ::= "gam delete group " EMAIL
+
+print_users ::= "gam print users"
+
+print_groups ::= "gam print groups"
+
+print_group_members ::= "gam print group-members group " EMAIL
+
+// Tokens
+NL ::= "\n"
+
+ONOFF ::= "on" | "off"
+
+EMAIL ::= EMAIL_LOCAL "@" EMAIL_DOMAIN "." TLD
+
+EMAIL_LOCAL ::= EMAIL_CHAR+
+EMAIL_DOMAIN ::= EMAIL_CHAR+ ("." EMAIL_CHAR+)*
+TLD ::= ALPHA{2,10}
+
+QSTR ::= '"' QCHAR* '"'
+
+ORGPATH ::= '/'? ORGCHAR+ ('/' ORGCHAR+)*
+
+// Character classes
+ALPHA ::= [a-zA-Z]
+DIGIT ::= [0-9]
+ALNUM ::= ALPHA | DIGIT
+
+EMAIL_CHAR ::= [a-zA-Z0-9._%+\-]
+QCHAR ::= [^"\\] | '\\' .
+ORGCHAR ::= [a-zA-Z0-9._\-]
+

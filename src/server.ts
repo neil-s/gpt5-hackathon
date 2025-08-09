@@ -59,6 +59,20 @@ app.post("/generate", async (req, res) => {
     const shell = isWindows ? "PowerShell" : "bash";
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
+    // Optionally load CFG grammar (currently advisory via prompt)
+    let grammarNote = "";
+    try {
+      const grammarPath = path.resolve(process.cwd(), "cfg", `${env}.gbnf`);
+      const grammarText = await fs.readFile(grammarPath, "utf8");
+      grammarNote = [
+        "",
+        "You MUST ensure the SCRIPT strictly adheres to this grammar:",
+        "GRAMMAR_START",
+        grammarText,
+        "GRAMMAR_END",
+      ].join("\n");
+    } catch {}
+
     const system = [
       `You write minimal, safe shell scripts for ${env} admin tasks.`,
       `Only output two sections exactly in this order and format:`,
@@ -68,6 +82,7 @@ app.post("/generate", async (req, res) => {
       `- A ${shell} script for ${isWindows ? "Windows (PowerShell)" : "Unix (bash)"}.`,
       `- Prefer dry-run friendly commands. If dry_run=true, simulate actions via echo/no-op flags.`,
       `- Quote safely. Do not include any extra commentary outside these sections.`,
+      grammarNote,
     ].join("\n");
 
     const user = [
