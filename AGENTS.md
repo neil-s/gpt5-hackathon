@@ -111,3 +111,19 @@ Build a minimal GPT-5-powered assistant app for SMB IT admins that helps generat
 - OpenAI Node SDK (GPT-5 support)  
 - Cross-platform support: Windows, macOS, Linux  
 - Local shell execution (PowerShell/bash)  
+
+---
+
+## Local Run
+
+- Dev (single process + HMR):
+  - `npm install` (root), then `cd web && npm install`
+  - `npm run dev` (root). Express mounts Vite middleware; open `http://localhost:3000`.
+  - APIs available at `/generate`, `/execute`, `/save`.
+
+- Prod (single server):
+  - `npm run build:all` (builds web + backend)
+  - `npm start` (serves `web/dist` and APIs on one port)
+
+- One-shot start (build then serve):
+  - `npm run start:prod`
