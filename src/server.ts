@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { spawn } from "node:child_process";
@@ -5,9 +6,10 @@ import path from "node:path";
 import os from "node:os";
 import fs from "node:fs/promises";
 import { z } from "zod";
+import OpenAI from "openai";
 
-// Placeholder for future OpenAI integration
-// import OpenAI from "openai";
+// Minimal OpenAI client (no CFG/tools yet)
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const app = express();
 app.use(cors());
@@ -35,19 +37,68 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
-// Stub: POST /generate
-app.post("/generate", (req, res) => {
+// POST /generate (minimal OpenAI integration)
+app.post("/generate", async (req, res) => {
   const parsed = GenerateSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
-  // TODO: Integrate GPT-5 with CFG and produce script + preamble
   const { env, task, dry_run } = parsed.data;
-  const preamble = `Plan for ${env} task: ${task}. Dry-run=${dry_run}`;
-  const shell_script = os.platform() === "win32" ? 
-    `Write-Host "Dry run: ${task}"` : 
-    `#!/usr/bin/env bash\necho "Dry run: ${task}"`;
-  res.json({ preamble, shell_script });
+
+  // Fallback to stub if no API key
+  if (!process.env.OPENAI_API_KEY) {
+    const preamble = `OpenAI API key not set; returning stub. Task: ${task} (env=${env}, dryRun=${dry_run})`;
+    const shell_script = os.platform() === "win32"
+      ? `Write-Host "Dry run: ${task}"`
+      : `#!/usr/bin/env bash\necho "Dry run: ${task}"`;
+    return res.json({ preamble, shell_script });
+  }
+
+  try {
+    const isWindows = os.platform() === "win32";
+    const shell = isWindows ? "PowerShell" : "bash";
+    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+
+    const system = [
+      `You write minimal, safe shell scripts for ${env} admin tasks.`,
+      `Only output two sections exactly in this order and format:`,
+      `PREAMBLE:`,
+      `- 1-3 sentences explaining what will run and why.`,
+      `SCRIPT:`,
+      `- A ${shell} script for ${isWindows ? "Windows (PowerShell)" : "Unix (bash)"}.`,
+      `- Prefer dry-run friendly commands. If dry_run=true, simulate actions via echo/no-op flags.`,
+      `- Quote safely. Do not include any extra commentary outside these sections.`,
+    ].join("\n");
+
+    const user = [
+      `Task: ${task}`,
+      `Environment: ${env}`,
+      `OS: ${isWindows ? "windows" : "unix"}`,
+      `Dry-run: ${dry_run ? "true" : "false"}`,
+    ].join("\n");
+
+    const completion = await openai.chat.completions.create({
+      model,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      temperature: 0.2,
+    });
+
+    const text = completion.choices[0]?.message?.content || "";
+    const preambleMatch = text.match(/PREAMBLE:\s*([\s\S]*?)\n\s*SCRIPT:/i);
+    const afterScript = text.split(/\n\s*SCRIPT:\s*/i)[1] || "";
+    let script = afterScript;
+    const fence = afterScript.match(/```[a-zA-Z0-9_-]*\n([\s\S]*?)```/);
+    if (fence) script = fence[1];
+
+    const preamble = preambleMatch ? preambleMatch[1].trim() : text.trim();
+    const shell_script = script.trim();
+    return res.json({ preamble, shell_script });
+  } catch (e: any) {
+    return res.status(500).json({ error: "openai_error", message: e?.message || String(e) });
+  }
 });
 
 // Helper to execute in local shell safely (simulated; dry-run only here)

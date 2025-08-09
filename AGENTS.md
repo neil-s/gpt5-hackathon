@@ -133,3 +133,16 @@ Build a minimal GPT-5-powered assistant app for SMB IT admins that helps generat
 ## Documentation Rule
 
 - Always update `PSEUDOCODE.md` whenever you change the code. It must reflect the current endpoints, execution flow, scripts, and any notable safety or validation behaviors.
+
+---
+
+## Environment Variables
+
+- `OPENAI_API_KEY` (required): OpenAI API key used by the backend.
+- `OPENAI_MODEL` (optional): Model name (default: `gpt-4o-mini`).
+- `PORT` (optional): Server port (default: `3000`).
+
+Tips:
+- Create a `.env` file in the project root for local dev (not committed). Example:
+  - `OPENAI_API_KEY=sk-...`
+  - `OPENAI_MODEL=gpt-4o-mini`

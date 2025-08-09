@@ -27,10 +27,15 @@ Generate endpoint
 - POST /generate
   - validate body with GenerateSchema
   - if invalid -> 400
-  - construct a placeholder preamble and a simple shell script:
-    - on Windows: PowerShell `Write-Host "Dry run: ..."`
-    - on Unix: bash script `echo "Dry run: ..."`
-  - return { preamble, shell_script }
+  - If `OPENAI_API_KEY` is missing:
+    - Return stub preamble and simple dry-run script (Write-Host/echo)
+  - Else call OpenAI Chat Completions:
+    - system prompt: instructs to output two sections (PREAMBLE, SCRIPT) only
+    - user prompt: includes task, env (m365/gam), OS (windows/unix), and dry-run flag
+    - parse model text:
+      - extract PREAMBLE text between `PREAMBLE:` and `SCRIPT:`
+      - extract SCRIPT code block (inside triple backticks if present)
+    - return { preamble, shell_script }
 
 Execute helper
 - function runShellScript(script)
@@ -102,4 +107,3 @@ Build/Serve
 - build:all: Build web then backend
 - start: Start compiled backend from `dist/`
 - start:prod: Build everything then start server
-
