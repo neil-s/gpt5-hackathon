@@ -1,20 +1,47 @@
 import { useState } from "react";
 
 export function App() {
-  const [env, setEnv] = useState<"m365" | "gam">("m365");
-  const [task, setTask] = useState("");
-  const [preamble, setPreamble] = useState("");
+  const [env, setEnv] = useState<"m365" | "gam">("gam");
+  const [task, setTask] = useState("Add a new user, Neil Satra. neil@joinrollout.ai. Use sensible defaults for all other required parameters");
   const [script, setScript] = useState("");
+  const [modelText, setModelText] = useState("");
+  const [raw, setRaw] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [useCache, setUseCache] = useState(true);
 
   async function generate() {
-    const res = await fetch("/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ env, task, dry_run: true }),
-    });
-    const data = await res.json();
-    setPreamble(data.preamble || "");
-    setScript(data.shell_script || "");
+    setError(null);
+    setScript("");
+    setModelText("");
+    setLoading(true);
+    try {
+      const res = await fetch(`/generate?cache=${useCache ? "1" : "0"}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ env, task }),
+      });
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+          const errJson = await res.json();
+          msg = `${msg}: ${errJson?.message || errJson?.error || JSON.stringify(errJson)}`;
+        } catch {
+          const txt = await res.text();
+          if (txt) msg = `${msg}: ${txt}`;
+        }
+        setError(msg);
+        return;
+      }
+      const data = await res.json();
+      setScript(data.shell_script || "");
+      setModelText(data.model_text || "");
+      setRaw(data.raw || null);
+    } catch (e: any) {
+      setError(e?.message || String(e));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -34,18 +61,38 @@ export function App() {
           value={task}
           onChange={(e) => setTask(e.target.value)}
         />
-        <button onClick={generate}>Generate</button>
+        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input type="checkbox" checked={useCache} onChange={(e) => setUseCache(e.target.checked)} />
+          Use cached response
+        </label>
+        <button onClick={generate} disabled={loading || !task.trim()}>{loading ? "Generating..." : "Generate"}</button>
       </div>
-      {preamble && (
-        <div style={{ marginTop: 16 }}>
-          <h3>Preamble</h3>
-          <pre>{preamble}</pre>
+      {error && (
+        <div style={{ marginTop: 12, color: "#b91c1c", background: "#fee2e2", padding: 8, borderRadius: 6 }}>
+          <strong>Error:</strong> {error}
         </div>
       )}
-      {script && (
+      {(script || modelText || raw) && (
         <div style={{ marginTop: 16 }}>
-          <h3>Generated Script</h3>
-          <pre>{script}</pre>
+          <h3>OpenAI Response</h3>
+          {script && (
+            <div style={{ marginTop: 8 }}>
+              <div><strong>Script</strong></div>
+              <pre>{script}</pre>
+            </div>
+          )}
+          {modelText && (
+            <div style={{ marginTop: 8 }}>
+              <div><strong>Text</strong></div>
+              <pre>{modelText}</pre>
+            </div>
+          )}
+          {raw && (
+            <div style={{ marginTop: 8 }}>
+              <div><strong>Raw</strong></div>
+              <pre style={{ overflow: 'auto' }}>{JSON.stringify(raw, null, 2)}</pre>
+            </div>
+          )}
         </div>
       )}
     </div>

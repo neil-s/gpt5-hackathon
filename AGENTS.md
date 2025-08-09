@@ -131,9 +131,10 @@ Build a minimal GPT-5-powered assistant app for SMB IT admins that helps generat
 
 ---
 
-## Documentation Rule
+## Agent Rules
 
 - Always update `PSEUDOCODE.md` whenever you change the code. It must reflect the current endpoints, execution flow, scripts, and any notable safety or validation behaviors.
+- If some logic is not working, don't add redundant fallbacks somewhere else. Investigate the root cause, and fix it. 
 
 ---
 

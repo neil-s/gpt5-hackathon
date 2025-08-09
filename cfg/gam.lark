@@ -1,0 +1,48 @@
+start: script
+
+script: command (NL command)* NL?
+
+command: create_user
+       | delete_user
+       | suspend_user
+       | unsuspend_user
+       | add_group_member
+       | remove_group_member
+       | create_group
+       | delete_group
+       | print_users
+       | print_groups
+       | print_group_members
+
+create_user: "gam" "create" "user" EMAIL "firstname" QSTR "lastname" QSTR "password" QSTR ("org" ORGPATH)? ("changepassword" onoff)?
+
+delete_user: "gam" "delete" "user" EMAIL
+
+suspend_user: "gam" "update" "user" EMAIL "suspended" "on"
+
+unsuspend_user: "gam" "update" "user" EMAIL "suspended" "off"
+
+add_group_member: "gam" "update" "group" EMAIL "add" "member" EMAIL
+
+remove_group_member: "gam" "update" "group" EMAIL "remove" "member" EMAIL
+
+create_group: "gam" "create" "group" EMAIL "name" QSTR ("description" QSTR)?
+
+delete_group: "gam" "delete" "group" EMAIL
+
+print_users: "gam" "print" "users"
+
+print_groups: "gam" "print" "groups"
+
+print_group_members: "gam" "print" "group-members" "group" EMAIL
+
+onoff: "on" | "off"
+
+EMAIL: /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,10}/
+ORGPATH: /\/?[A-Za-z0-9._\-]+(\/[A-Za-z0-9._\-]+)*/
+QSTR: /"([^"\\]|\\.)*"/
+NL: /\r?\n/
+WS_INLINE: /[ \t]+/
+%ignore WS_INLINE
+
+

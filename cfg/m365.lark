@@ -1,0 +1,13 @@
+// Lark grammar: Microsoft 365 CLI (placeholder subset)
+
+start: script
+
+script: command (NL command)* NL?
+
+command: echo_only
+
+echo_only: "echo m365 script placeholder"
+
+NL: /\n/
+
+

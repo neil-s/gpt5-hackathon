@@ -7,8 +7,9 @@ import os from "node:os";
 import fs from "node:fs/promises";
 import { z } from "zod";
 import OpenAI from "openai";
+import { generateScript } from "./openaiClient.ts";
 
-// Minimal OpenAI client (no CFG/tools yet)
+// OpenAI client (GPT-5 with tool grammar support)
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const app = express();
@@ -19,7 +20,6 @@ app.use(express.json({ limit: "1mb" }));
 const GenerateSchema = z.object({
   env: z.union([z.literal("m365"), z.literal("gam")]),
   task: z.string().min(1),
-  dry_run: z.boolean().optional().default(true),
 });
 
 const ExecuteSchema = z.object({
@@ -43,71 +43,20 @@ app.post("/generate", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
-  const { env, task, dry_run } = parsed.data;
+  const { env, task } = parsed.data;
 
   // Fallback to stub if no API key
   if (!process.env.OPENAI_API_KEY) {
-    const preamble = `OpenAI API key not set; returning stub. Task: ${task} (env=${env}, dryRun=${dry_run})`;
     const shell_script = os.platform() === "win32"
-      ? `Write-Host "Dry run: ${task}"`
-      : `#!/usr/bin/env bash\necho "Dry run: ${task}"`;
-    return res.json({ preamble, shell_script });
+      ? `Write-Host "${task}"`
+      : `#!/usr/bin/env bash\necho "${task}"`;
+    return res.json({ shell_script });
   }
 
   try {
-    const isWindows = os.platform() === "win32";
-    const shell = isWindows ? "PowerShell" : "bash";
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
-    // Optionally load CFG grammar (currently advisory via prompt)
-    let grammarNote = "";
-    try {
-      const grammarPath = path.resolve(process.cwd(), "cfg", `${env}.gbnf`);
-      const grammarText = await fs.readFile(grammarPath, "utf8");
-      grammarNote = [
-        "",
-        "You MUST ensure the SCRIPT strictly adheres to this grammar:",
-        "GRAMMAR_START",
-        grammarText,
-        "GRAMMAR_END",
-      ].join("\n");
-    } catch {}
-
-    const system = [
-      `You write minimal, safe shell scripts for ${env} admin tasks.`,
-      `Only output two sections exactly in this order and format:`,
-      `PREAMBLE:`,
-      `- 1-3 sentences explaining what will run and why.`,
-      `SCRIPT:`,
-      `- A ${shell} script for ${isWindows ? "Windows (PowerShell)" : "Unix (bash)"}.`,
-      `- Prefer dry-run friendly commands. If dry_run=true, simulate actions via echo/no-op flags.`,
-      `- Quote safely. Do not include any extra commentary outside these sections.`,
-      grammarNote,
-    ].join("\n");
-
-    const user = [
-      `Task: ${task}`,
-      `Environment: ${env}`,
-      `OS: ${isWindows ? "windows" : "unix"}`,
-      `Dry-run: ${dry_run ? "true" : "false"}`,
-    ].join("\n");
-
-    const response = await openai.responses.create({
-      model,
-      input: `SYSTEM\n${system}\n\nUSER\n${user}`,
-      temperature: 0.2,
-    });
-
-    const text = (response as any).output_text ?? "";
-    const preambleMatch = text.match(/PREAMBLE:\s*([\s\S]*?)\n\s*SCRIPT:/i);
-    const afterScript = text.split(/\n\s*SCRIPT:\s*/i)[1] || "";
-    let script = afterScript;
-    const fence = afterScript.match(/```[a-zA-Z0-9_-]*\n([\s\S]*?)```/);
-    if (fence) script = fence[1];
-
-    const preamble = preambleMatch ? preambleMatch[1].trim() : text.trim();
-    const shell_script = script.trim();
-    return res.json({ preamble, shell_script });
+    const useCache = req.query.cache === "1" || req.query.cache === "true";
+    const result = await generateScript(env, task, { useCache });
+    return res.json({ shell_script: result.script, model_text: result.text, raw: result.raw });
   } catch (e: any) {
     return res.status(500).json({ error: "openai_error", message: e?.message || String(e) });
   }

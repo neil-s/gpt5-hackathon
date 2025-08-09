@@ -13,7 +13,8 @@
     "build:all": "npm run build:web && npm run build",
     "start": "node dist/server.js",
     "start:prod": "npm run build:all && npm start",
-    "format": "echo 'add formatter later'"
+    "format": "echo 'add formatter later'",
+    "validate:grammar": "python3 scripts/validate_grammar.py"
   },
   "dependencies": {
     "cors": "^2.8.5",
