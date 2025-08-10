@@ -1,5 +1,56 @@
 import { useEffect, useState } from "react";
 
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function highlightScript(code: string, env: "m365" | "gam"): string {
+  let html = escapeHtml(code);
+
+  const placeholders: string[] = [];
+  const replaceWithPlaceholder = (value: string): string => {
+    const token = `__TOKEN_${placeholders.length}__`;
+    placeholders.push(value);
+    return token;
+  };
+
+  // Protect strings first
+  html = html.replace(/"[^"\\]*(?:\\.[^"\\]*)*"/g, (m) => replaceWithPlaceholder(`<span class=\"str\">${m}</span>`));
+  html = html.replace(/'[^'\\]*(?:\\.[^'\\]*)*'/g, (m) => replaceWithPlaceholder(`<span class=\"str\">${m}</span>`));
+
+  // Protect comments
+  html = html.replace(/(^|\n)([^\S\n]*#.*)(?=\n|$)/g, (_m, p1: string, p2: string) => `${p1}${replaceWithPlaceholder(`<span class=\"com\">${p2}</span>`)}`);
+
+  if (env === "m365") {
+    // PowerShell-like highlighting
+    html = html.replace(/\b(?:Get|Set|New|Remove|Add|Update|Grant|Revoke|Connect|Disconnect|Enable|Disable)-[A-Za-z][A-Za-z0-9]*\b/g, (m) => `<span class=\"cmd\">${m}</span>`);
+    html = html.replace(/(^|\s)(-[A-Za-z][A-Za-z0-9-]*)/g, (_m, p1: string, p2: string) => `${p1}<span class=\"param\">${p2}</span>`);
+    html = html.replace(/\$[A-Za-z_][A-Za-z0-9_\.:]*/g, (m) => `<span class=\"var\">${m}</span>`);
+    html = html.replace(/\b(?:if|elseif|else|foreach|for|while|switch|function|param|return|try|catch|finally)\b/g, (m) => `<span class=\"kw\">${m}</span>`);
+    html = html.replace(/\b\d+\b/g, (m) => `<span class=\"num\">${m}</span>`);
+  } else {
+    // Bash/GAM-like highlighting
+    html = html.replace(/\b(?:sudo|echo|export|set|cd|mkdir|rm|cp|mv|grep|awk|sed|curl|wget|gam)\b/g, (m) => `<span class=\"cmd\">${m}</span>`);
+    html = html.replace(/(^|\s)(--?[A-Za-z][A-Za-z0-9-_]*)/g, (_m, p1: string, p2: string) => `${p1}<span class=\"param\">${p2}</span>`);
+    html = html.replace(/\$\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*|\$\d+/g, (m) => `<span class=\"var\">${m}</span>`);
+    html = html.replace(/\b(?:if|then|else|elif|fi|for|in|do|done|while|case|esac|function|return|exit)\b/g, (m) => `<span class=\"kw\">${m}</span>`);
+    html = html.replace(/\b\d+\b/g, (m) => `<span class=\"num\">${m}</span>`);
+  }
+
+  // Restore placeholders
+  placeholders.forEach((value, i) => {
+    const token = new RegExp(`__TOKEN_${i}__`, "g");
+    html = html.replace(token, value);
+  });
+
+  return html;
+}
+
 export function App() {
   const [env, setEnv] = useState<"m365" | "gam">("gam");
   const [task, setTask] = useState("Add a new user, Neil Satra. neil@joinrollout.ai. Use sensible defaults for all other required parameters");
@@ -203,7 +254,12 @@ export function App() {
                     overflow: "auto",
                     fontSize: 13,
                   }}
-                ><code>{script}</code></pre>
+                >
+                  <code
+                    className="hl"
+                    dangerouslySetInnerHTML={{ __html: highlightScript(script, env) }}
+                  />
+                </pre>
               </div>
             )}
 
@@ -248,6 +304,19 @@ export function App() {
             )}
           </div>
         )}
+        {/* Inline tiny CSS for the highlighter */}
+        <style>
+          {`
+          code.hl { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+          code.hl .kw { color: #93c5fd; }
+          code.hl .cmd { color: #60a5fa; }
+          code.hl .param { color: #a5b4fc; }
+          code.hl .var { color: #facc15; }
+          code.hl .str { color: #86efac; }
+          code.hl .com { color: #94a3b8; font-style: italic; }
+          code.hl .num { color: #fda4af; }
+          `}
+        </style>
       </div>
     </div>
   );
