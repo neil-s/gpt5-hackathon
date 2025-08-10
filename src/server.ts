@@ -45,16 +45,17 @@ app.post("/generate", async (req, res) => {
   }
   const { env, task } = parsed.data;
 
-  // Fallback to stub if no API key
-  if (!process.env.OPENAI_API_KEY) {
+  // Prefer cached response when requested, even without API key
+  const useCache = req.query.cache === "1" || req.query.cache === "true";
+  if (!process.env.OPENAI_API_KEY && !useCache) {
+    // Fallback to stub only when no API key and cache not requested
     const shell_script = os.platform() === "win32"
-      ? `Write-Host "${task}"`
+      ? `Write-Host "${task}` + `"`
       : `#!/usr/bin/env bash\necho "${task}"`;
     return res.json({ shell_script });
   }
 
   try {
-    const useCache = req.query.cache === "1" || req.query.cache === "true";
     const result = await generateScript(env, task, { useCache });
     return res.json({ shell_script: result.script, model_text: result.text, raw: result.raw, input_messages: result.inputMessages });
   } catch (e: any) {

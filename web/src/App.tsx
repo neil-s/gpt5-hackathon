@@ -53,7 +53,7 @@ function highlightScript(code: string, env: "m365" | "gam"): string {
 
 export function App() {
   const [env, setEnv] = useState<"m365" | "gam">("gam");
-  const [task, setTask] = useState("Add a new user, Neil Satra. neil@joinrollout.ai. Use sensible defaults for all other required parameters");
+  const [task, setTask] = useState("We're onboarding a new employee, Neil Satra. Give them the email neil@joinrollout.ai, add them to the engineers@ group, and require 2FA");
   const [script, setScript] = useState("");
   const [modelText, setModelText] = useState("");
   const [raw, setRaw] = useState<any>(null);
@@ -127,69 +127,81 @@ export function App() {
           style={{
             display: "flex",
             gap: 12,
-            alignItems: "stretch",
+            alignItems: "flex-start",
             background: "#ffffff",
             border: "1px solid #e2e8f0",
             borderRadius: 12,
             padding: 12,
             boxShadow: "0 1px 2px rgba(16,24,40,0.05)",
+            flexWrap: "wrap",
           }}
         >
-          <label style={{ display: "flex", flexDirection: "column", fontSize: 12, color: "#475569", gap: 6, minWidth: 220 }}>
-            Environment
-            <select
-              value={env}
-              onChange={(e) => setEnv(e.target.value as any)}
-              style={{
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1px solid #cbd5e1",
-                outline: "none",
-                background: "#fff",
-                color: "#0f172a",
-              }}
-            >
-              <option value="gam">Google Workspace</option>
-              <option value="m365">Microsoft 365</option>
-            </select>
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", flex: 1, fontSize: 12, color: "#475569", gap: 6 }}>
-            Task
-            <input
-              style={{
-                flex: 1,
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1px solid #cbd5e1",
-                outline: "none",
-                background: "#fff",
-                color: "#0f172a",
-              }}
-              placeholder="Describe your admin task..."
-              value={task}
-              onChange={(e) => setTask(e.target.value)}
-            />
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#0f172a", padding: 8 }}>
-            <input type="checkbox" checked={useCache} onChange={(e) => setUseCache(e.target.checked)} />
-            Use cache
-          </label>
-          <button
-            onClick={generate}
-            disabled={loading || !task.trim()}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 8,
-              border: "1px solid #3b82f6",
-              background: loading || !task.trim() ? "#93c5fd" : "#3b82f6",
-              color: "white",
-              cursor: loading || !task.trim() ? "not-allowed" : "pointer",
-              fontWeight: 600,
-              minWidth: 120,
-            }}
-          >
-            {loading ? "Generating..." : "Generate"}
-          </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 220, flex: "0 0 240px" }}>
+            <label style={{ display: "flex", flexDirection: "column", fontSize: 12, color: "#475569", gap: 6 }}>
+              Environment
+              <select
+                value={env}
+                onChange={(e) => setEnv(e.target.value as any)}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "1px solid #cbd5e1",
+                  outline: "none",
+                  background: "#fff",
+                  color: "#0f172a",
+                }}
+              >
+                <option value="gam">Google Workspace</option>
+                <option value="m365">Microsoft 365</option>
+              </select>
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#0f172a", padding: 8 }}>
+              <input type="checkbox" checked={useCache} onChange={(e) => setUseCache(e.target.checked)} />
+              Use cache
+            </label>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: "1 1 300px", minWidth: 0 }}>
+            <label style={{ display: "flex", flexDirection: "column", fontSize: 12, color: "#475569", gap: 6 }}>
+              Task
+              <textarea
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "1px solid #cbd5e1",
+                  outline: "none",
+                  background: "#fff",
+                  color: "#0f172a",
+                  width: "100%",
+                  maxWidth: "100%",
+                  minHeight: 120,
+                  resize: "vertical",
+                  boxSizing: "border-box",
+                }}
+                placeholder="Describe your admin task..."
+                value={task}
+                onChange={(e) => setTask(e.target.value)}
+                rows={4}
+              />
+            </label>
+            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+              <button
+                onClick={generate}
+                disabled={loading || !task.trim()}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 8,
+                  border: "1px solid #3b82f6",
+                  background: loading || !task.trim() ? "#93c5fd" : "#3b82f6",
+                  color: "white",
+                  cursor: loading || !task.trim() ? "not-allowed" : "pointer",
+                  fontWeight: 600,
+                  minWidth: 120,
+                }}
+              >
+                {loading ? "Generating..." : "Generate"}
+              </button>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -253,10 +265,13 @@ export function App() {
                     color: "#e2e8f0",
                     overflow: "auto",
                     fontSize: 13,
+                    whiteSpace: "pre-wrap",
+                    maxWidth: "100%",
                   }}
                 >
                   <code
                     className="hl"
+                    style={{ display: "block", whiteSpace: "inherit", wordBreak: "break-word", overflowWrap: "anywhere" }}
                     dangerouslySetInnerHTML={{ __html: highlightScript(script, env) }}
                   />
                 </pre>
@@ -280,7 +295,7 @@ export function App() {
                   {inputMessages && (
                     <div>
                       <div style={{ fontWeight: 600, marginBottom: 6 }}>Input sent to OpenAI</div>
-                      <pre style={{ whiteSpace: "pre-wrap", margin: 0, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 12 }}>
+                      <pre style={{ whiteSpace: "pre-wrap", margin: 0, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 12, overflow: "auto", maxWidth: "100%", wordBreak: "break-word", overflowWrap: "anywhere" }}>
                         {inputMessages.map((m) => `${m.role.toUpperCase()}:\n${m.content}`).join("\n\n")}
                       </pre>
                     </div>
@@ -288,13 +303,13 @@ export function App() {
                   {modelText && (
                     <div>
                       <div style={{ fontWeight: 600, marginBottom: 6 }}>Model Text</div>
-                      <pre style={{ margin: 0, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 12 }}>{modelText}</pre>
+                      <pre style={{ margin: 0, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 12, whiteSpace: "pre-wrap", overflow: "auto", maxWidth: "100%", wordBreak: "break-word", overflowWrap: "anywhere" }}>{modelText}</pre>
                     </div>
                   )}
                   {raw && (
                     <div>
                       <div style={{ fontWeight: 600, marginBottom: 6 }}>Raw JSON</div>
-                      <pre style={{ margin: 0, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 12, overflow: "auto" }}>
+                      <pre style={{ margin: 0, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 12, overflow: "auto", maxWidth: "100%", whiteSpace: "pre-wrap", wordBreak: "break-word", overflowWrap: "anywhere" }}>
                         {JSON.stringify(raw, null, 2)}
                       </pre>
                     </div>
