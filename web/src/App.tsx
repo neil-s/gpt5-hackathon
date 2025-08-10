@@ -57,6 +57,7 @@ export function App() {
   const [script, setScript] = useState("");
   const [modelText, setModelText] = useState("");
   const [raw, setRaw] = useState<any>(null);
+  const [reasoning, setReasoning] = useState("");
   const [inputMessages, setInputMessages] = useState<Array<{ role: "system" | "user"; content: string }> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,6 +69,7 @@ export function App() {
     setScript("");
     setModelText("");
     setRaw(null);
+    setReasoning("");
     setInputMessages(null);
     setLoading(true);
     try {
@@ -92,6 +94,36 @@ export function App() {
       setScript(data.shell_script || "");
       setModelText(data.model_text || "");
       setRaw(data.raw || null);
+      // Extract reasoning from OpenAI Responses API shape if present
+      try {
+        const extractReasoning = (r: any): string => {
+          if (!r) return "";
+          const blocks = (r as any).output;
+          if (Array.isArray(blocks)) {
+            const texts: string[] = [];
+            for (const b of blocks) {
+              if (b && b.type === "reasoning") {
+                if (Array.isArray(b.summary)) {
+                  for (const s of b.summary) {
+                    const t = (s && (s.text || s.content || s.message)) as string | undefined;
+                    if (t && t.trim()) texts.push(t.trim());
+                  }
+                }
+                if (typeof b.text === "string" && b.text.trim()) texts.push(b.text.trim());
+                if (Array.isArray((b as any).steps)) {
+                  for (const step of (b as any).steps) {
+                    const t = step && (step.text || step.content);
+                    if (t && String(t).trim()) texts.push(String(t).trim());
+                  }
+                }
+              }
+            }
+            if (texts.length) return texts.join("\n\n");
+          }
+          return "";
+        };
+        setReasoning(extractReasoning(data.raw));
+      } catch {}
       setInputMessages(data.input_messages || null);
     } catch (e: any) {
       setError(e?.message || String(e));
@@ -275,6 +307,74 @@ export function App() {
                     dangerouslySetInnerHTML={{ __html: highlightScript(script, env) }}
                   />
                 </pre>
+              </div>
+            )}
+
+            {reasoning && (
+              <div
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 12,
+                  boxShadow: "0 1px 2px rgba(16,24,40,0.05)",
+                  overflow: "hidden",
+                }}
+              >
+                <div style={{ padding: "12px 14px", borderBottom: "1px solid #e2e8f0", fontWeight: 600, color: "#1e293b" }}>Reasoning</div>
+                <div style={{ padding: 16 }}>
+                  <div style={{ 
+                    background: "#f8fafc", 
+                    border: "1px solid #e2e8f0", 
+                    borderRadius: 8, 
+                    padding: 16,
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    color: "#334155"
+                  }}>
+                    {reasoning.split('\n\n').map((paragraph, index) => {
+                      // Check if this looks like a summary item (starts with **)
+                      if (paragraph.trim().startsWith('**') && paragraph.trim().endsWith('**')) {
+                        return (
+                          <div key={index} style={{ 
+                            marginBottom: index < reasoning.split('\n\n').length - 1 ? 16 : 0,
+                            fontWeight: 600,
+                            color: "#1e293b",
+                            fontSize: 15
+                          }}>
+                            {paragraph}
+                          </div>
+                        );
+                      }
+                      // Check if it's a bullet point or numbered item
+                      if (paragraph.trim().startsWith('-') || paragraph.trim().startsWith('•') || /^\d+\./.test(paragraph.trim())) {
+                        return (
+                          <div key={index} style={{ 
+                            marginBottom: index < reasoning.split('\n\n').length - 1 ? 12 : 0,
+                            paddingLeft: 16,
+                            position: 'relative'
+                          }}>
+                            <span style={{ 
+                              position: 'absolute', 
+                              left: 0, 
+                              color: '#64748b',
+                              fontWeight: 500
+                            }}>•</span>
+                            <span style={{ paddingLeft: 8 }}>{paragraph.trim().replace(/^[-•\d+\.\s]+/, '')}</span>
+                          </div>
+                        );
+                      }
+                      // Regular paragraph
+                      return (
+                        <div key={index} style={{ 
+                          marginBottom: index < reasoning.split('\n\n').length - 1 ? 12 : 0,
+                          textAlign: 'justify'
+                        }}>
+                          {paragraph}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
 
