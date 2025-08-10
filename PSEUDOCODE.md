@@ -82,20 +82,27 @@ Notes / TODOs
 ## Frontend (web/)
 
 App state
-- env: 'm365' | 'gam' (default 'm365')
+- env: 'm365' | 'gam' (default 'gam')
 - task: string
-- preamble: string
 - script: string
+- modelText: string (model textual output if any)
+- reasoning: string (extracted from OpenAI Responses API reasoning blocks)
+- raw: any (raw JSON from API)
+- inputMessages: Array of request messages sent to OpenAI
 
 Generate flow
 - On click "Generate":
-  - POST /generate with { env, task, dry_run: true }
-  - receive { preamble, shell_script }
-  - set UI state to display results
+  - POST /generate with { env, task }
+  - receive { shell_script, model_text, raw, input_messages }
+  - extract `reasoning` from `raw.output` blocks where `type === "reasoning"` (concatenate `summary[].text`, optional `text`, and step texts)
+  - update UI state
 
 Render
 - Simple form with environment select, task input, and Generate button
-- Two sections displaying Preamble and Generated Script if present
+- Sections when data present:
+  - Script (syntax-highlighted)
+  - Reasoning (only if extracted; shown between Script and Debug)
+  - Debug (Input sent to OpenAI, Model Text, Raw JSON)
 
 Build/Serve
 - Dev: Express mounts Vite HMR. Navigate to http://localhost:3000
