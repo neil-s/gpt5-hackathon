@@ -1,13 +1,52 @@
-// Lark grammar: Microsoft 365 CLI (placeholder subset)
-
 start: script
 
 script: command (NL command)* NL?
 
-command: echo_only
+command: create_user
+       | delete_user
+       | suspend_user
+       | unsuspend_user
+       | add_group_member
+       | remove_group_member
+       | create_group
+       | delete_group
+       | print_users
+       | print_groups
+       | print_group_members
 
-echo_only: "echo m365 script placeholder"
+// Users
+create_user: "m365" "aad" "user" "add" "--userPrincipalName" EMAIL "--displayName" QSTR "--password" QSTR ("--forceChangePasswordNextSignIn" truefalse)? ("--accountEnabled" truefalse)?
 
-NL: /\n/
+delete_user: "m365" "aad" "user" "remove" "--id" EMAIL ("--confirm")?
 
+suspend_user: "m365" "aad" "user" "set" "--id" EMAIL "--accountEnabled" "false"
+
+unsuspend_user: "m365" "aad" "user" "set" "--id" EMAIL "--accountEnabled" "true"
+
+// Groups (Microsoft 365 Groups)
+create_group: "m365" "aad" "o365group" "add" "--displayName" QSTR "--mailNickname" ALIAS ("--description" QSTR)? ("--isPrivate" truefalse)?
+
+delete_group: "m365" "aad" "o365group" "remove" group_selector ("--confirm")?
+
+add_group_member: "m365" "aad" "o365group" "user" "add" group_selector "--userName" EMAIL
+
+remove_group_member: "m365" "aad" "o365group" "user" "remove" group_selector "--userName" EMAIL ("--confirm")?
+
+print_users: "m365" "aad" "user" "list"
+
+print_groups: "m365" "aad" "o365group" "list"
+
+print_group_members: "m365" "aad" "o365group" "user" "list" group_selector
+
+group_selector: ("--groupId" GUID) | ("--displayName" QSTR) | ("--mailNickname" ALIAS) | ("--alias" ALIAS)
+
+truefalse: "true" | "false"
+
+EMAIL: /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,10}/
+GUID: /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+ALIAS: /[A-Za-z0-9._\-]+/
+QSTR: /"([^"\\]|\\.)*"/
+NL: /\r?\n/
+WS_INLINE: /[ \t]+/
+%ignore WS_INLINE
 
