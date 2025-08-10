@@ -63,6 +63,7 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [useCache, setUseCache] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [showExecuteToast, setShowExecuteToast] = useState(false);
 
   async function generate() {
     setError(null);
@@ -137,6 +138,16 @@ export function App() {
     const t = setTimeout(() => setCopied(false), 1200);
     return () => clearTimeout(t);
   }, [copied]);
+
+  useEffect(() => {
+    if (!showExecuteToast) return;
+    const t = setTimeout(() => setShowExecuteToast(false), 2000);
+    return () => clearTimeout(t);
+  }, [showExecuteToast]);
+
+  const handleExecute = () => {
+    setShowExecuteToast(true);
+  };
 
   return (
     <div
@@ -236,6 +247,25 @@ export function App() {
           </div>
         </div>
 
+        {showExecuteToast && (
+          <div
+            style={{
+              position: "fixed",
+              top: 20,
+              right: 20,
+              background: "#10b981",
+              color: "white",
+              padding: "12px 16px",
+              borderRadius: 8,
+              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+              zIndex: 1000,
+              fontWeight: 500,
+            }}
+          >
+            Executing script
+          </div>
+        )}
+
         {error && (
           <div
             style={{
@@ -286,6 +316,22 @@ export function App() {
                       }}
                     >
                       Copy
+                    </button>
+                    <button
+                      onClick={handleExecute}
+                      disabled={loading || !script.trim()}
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: 6,
+                        border: "1px solid #3b82f6",
+                        background: loading || !script.trim() ? "#93c5fd" : "#3b82f6",
+                        color: "white",
+                        cursor: loading || !script.trim() ? "not-allowed" : "pointer",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Execute
                     </button>
                   </div>
                 </div>
