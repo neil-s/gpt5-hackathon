@@ -7,7 +7,7 @@ import os from "node:os";
 import fs from "node:fs/promises";
 import { z } from "zod";
 import OpenAI from "openai";
-import { generateScript } from "./openaiClient.ts";
+import { generateScript } from "./openaiClient.js";
 
 // OpenAI client (GPT-5 with tool grammar support)
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -56,7 +56,7 @@ app.post("/generate", async (req, res) => {
   try {
     const useCache = req.query.cache === "1" || req.query.cache === "true";
     const result = await generateScript(env, task, { useCache });
-    return res.json({ shell_script: result.script, model_text: result.text, raw: result.raw });
+    return res.json({ shell_script: result.script, model_text: result.text, raw: result.raw, input_messages: result.inputMessages });
   } catch (e: any) {
     return res.status(500).json({ error: "openai_error", message: e?.message || String(e) });
   }

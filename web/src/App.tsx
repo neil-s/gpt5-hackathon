@@ -6,6 +6,7 @@ export function App() {
   const [script, setScript] = useState("");
   const [modelText, setModelText] = useState("");
   const [raw, setRaw] = useState<any>(null);
+  const [inputMessages, setInputMessages] = useState<Array<{ role: "system" | "user"; content: string }> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [useCache, setUseCache] = useState(true);
@@ -14,6 +15,8 @@ export function App() {
     setError(null);
     setScript("");
     setModelText("");
+    setRaw(null);
+    setInputMessages(null);
     setLoading(true);
     try {
       const res = await fetch(`/generate?cache=${useCache ? "1" : "0"}`, {
@@ -37,6 +40,7 @@ export function App() {
       setScript(data.shell_script || "");
       setModelText(data.model_text || "");
       setRaw(data.raw || null);
+      setInputMessages(data.input_messages || null);
     } catch (e: any) {
       setError(e?.message || String(e));
     } finally {
@@ -72,9 +76,15 @@ export function App() {
           <strong>Error:</strong> {error}
         </div>
       )}
-      {(script || modelText || raw) && (
+      {(script || modelText || raw || inputMessages) && (
         <div style={{ marginTop: 16 }}>
           <h3>OpenAI Response</h3>
+          {inputMessages && (
+            <div style={{ marginTop: 8 }}>
+              <div><strong>Input sent to OpenAI</strong></div>
+              <pre style={{ whiteSpace: 'pre-wrap' }}>{inputMessages.map((m) => `${m.role.toUpperCase()}:\n${m.content}`).join("\n\n")}</pre>
+            </div>
+          )}
           {script && (
             <div style={{ marginTop: 8 }}>
               <div><strong>Script</strong></div>
