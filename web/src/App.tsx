@@ -9,6 +9,18 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, "&#039;");
 }
 
+function renderMarkdown(text: string): string {
+  return text
+    // Bold text: **text** -> <strong>text</strong>
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Italic text: *text* -> <em>text</em> (but not if it's already bold)
+    .replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<em>$1</em>')
+    // Code: `code` -> <code>code</code>
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Line breaks: \n -> <br>
+    .replace(/\n/g, '<br>');
+}
+
 function highlightScript(code: string, env: "m365" | "gam"): string {
   let html = escapeHtml(code);
 
@@ -368,15 +380,18 @@ export function App() {
               >
                 <div style={{ padding: "12px 14px", borderBottom: "1px solid #e2e8f0", fontWeight: 600, color: "#1e293b" }}>Reasoning</div>
                 <div style={{ padding: 16 }}>
-                  <div style={{ 
-                    background: "#f8fafc", 
-                    border: "1px solid #e2e8f0", 
-                    borderRadius: 8, 
-                    padding: 16,
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    color: "#334155"
-                  }}>
+                  <div 
+                    className="reasoning-content"
+                    style={{ 
+                      background: "#f8fafc", 
+                      border: "1px solid #e2e8f0", 
+                      borderRadius: 8, 
+                      padding: 16,
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      color: "#334155"
+                    }}
+                  >
                     {reasoning.split('\n\n').map((paragraph, index) => {
                       // Check if this looks like a summary item (starts with **)
                       if (paragraph.trim().startsWith('**') && paragraph.trim().endsWith('**')) {
@@ -386,9 +401,9 @@ export function App() {
                             fontWeight: 600,
                             color: "#1e293b",
                             fontSize: 15
-                          }}>
-                            {paragraph}
-                          </div>
+                          }}
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(paragraph) }}
+                        />
                         );
                       }
                       // Check if it's a bullet point or numbered item
@@ -405,7 +420,7 @@ export function App() {
                               color: '#64748b',
                               fontWeight: 500
                             }}>•</span>
-                            <span style={{ paddingLeft: 8 }}>{paragraph.trim().replace(/^[-•\d+\.\s]+/, '')}</span>
+                            <span style={{ paddingLeft: 8 }} dangerouslySetInnerHTML={{ __html: renderMarkdown(paragraph.trim().replace(/^[-•\d+\.\s]+/, '')) }} />
                           </div>
                         );
                       }
@@ -414,9 +429,9 @@ export function App() {
                         <div key={index} style={{ 
                           marginBottom: index < reasoning.split('\n\n').length - 1 ? 12 : 0,
                           textAlign: 'justify'
-                        }}>
-                          {paragraph}
-                        </div>
+                        }}
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(paragraph) }}
+                      />
                       );
                     })}
                   </div>
@@ -465,13 +480,24 @@ export function App() {
             )}
           </div>
         )}
-        {/* Inline tiny CSS for the highlighter */}
+        {/* Inline tiny CSS for the highlighter and markdown */}
         <style>
           {`
           code.hl { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
           code.hl .kw { color: #93c5fd; }
           code.hl .cmd { color: #60a5fa; }
           code.hl .param { color: #a5b4fc; }
+          /* Markdown styling */
+          .reasoning-content strong { font-weight: 600; color: #1e293b; }
+          .reasoning-content em { font-style: italic; color: #475569; }
+          .reasoning-content code { 
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #0f172a;
+          }
           code.hl .var { color: #facc15; }
           code.hl .str { color: #86efac; }
           code.hl .com { color: #94a3b8; font-style: italic; }
